@@ -93,6 +93,8 @@ void error(char* str, cch* fmt, ...)
 void parse_methods(cParse::Parse_t pos)
 {
 	xVector<cParse::Parse_t> args;
+	static const cParse::Token hresult = 
+		cParse::Token::make(CTOK_NAME, "HRESULT");
 
 	while(pos.chk())
 	{
@@ -118,8 +120,17 @@ void parse_methods(cParse::Parse_t pos)
 			cstr name = pos.getCall(args);
 			if((args.size() != 2)
 			||(name.cmp("STDMETHOD_"))) {
-				error(pos->str, "bad function"); 
-				continue;
+			
+				if((args.size() == 1)
+				&&(!name.cmp("STDMETHOD"))) {
+					args.xresize(2);
+					args[1] = args[0];
+					args[0] = {(cParse::Token*)&hresult, 1};
+					
+				} else {
+					error(pos->str, "bad function"); 
+					continue;
+				}
 			}
 				
 			
