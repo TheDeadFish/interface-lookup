@@ -120,24 +120,32 @@ void parse_methods(bool idlMode, cParse::Parse_t pos)
 		{
 			// validate function type
 			if(item.type != 0) {
-				if(!item.name.cmp("cpp_quote")) continue;
-				error(pos->str, "bad idl function type"); break; }
+				if(!item.name.cmp("cpp_quote")) continue; ERR:
+				error(pos->str, "bad idl function"); break; }
 
 			// skip typedef, enum, const
 			if((!item.name.cmp("typedef"))
 			||(!item.name.cmp("enum"))
-			||(!item.name.cmp("const"))) {
+			||(!item.name.cmp("const"))
+			||(!item.name.cmp("struct"))) {
 				pos.splitR_stmtEnd(); continue; }
 
-			// validate function name
-			if(!pos.chk() || (pos->value() != CTOK_NAME)) {
-				error(pos->str, "bad idl function name"); break; }
+			// skip virtual
+			if(!pos[-1].cStr().cmp("virtual")) {
+				if(!pos.chk()) goto ERR; pos.fi(); }
 
-			// get idl function type/name
+			// get idl function type
 			s_args.xresize(2);
 			s_args[0] = {&pos[-1],1};
-			s_args[1] = {&pos[0],1};
-			pos.fi();
+			while(1) { if(!pos.chk()) goto ERR;
+				if(pos->value() != CTOK_MUL) break;
+				s_args[0].end_++; pos.fi(); }
+
+			// get idl function name
+			if(!pos[0].cStr().cmp("STDMETHODCALLTYPE")) {
+				pos.fi(); if(!pos.chk()) goto ERR; }
+			if(pos[0].value() != CTOK_NAME) goto ERR;
+			s_args[1] = {&pos[0],1}; pos.fi();
 
 		} else {
 
@@ -229,9 +237,18 @@ void parse_interface(cch* name)
 				||(pos[2].value() != CTOK_NAME))
 					continue;
 
-				// get idl type
+				// get idl class type
 				s_args.xresize(2);
 				s_args[0] = {&pos[0],1};
+
+				// skip public
+				if(!pos[2].cStr().cmp("public")) {
+					pos.fi();
+					if(pos[2].value() != CTOK_NAME)
+						continue;
+				}
+
+				// get idl base type
 				s_args[1] = {&pos[2],1};
 				idlMode = true;
 				pos.data += 3;
