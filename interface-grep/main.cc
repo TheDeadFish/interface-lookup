@@ -15,33 +15,29 @@ struct defineName_t {
 };
 
 struct define_t {
-	defineName_t name;
+	cstr name; 
+	xArray<xstr> args;
 	cParse::Parse_t toks; 
 };
 
 xarray<define_t> defList;
 
-defineName_t parse_defName(cParse::Parse_t& pos)
+defineName_t parse_defName(
+	xVector<cParse::Parse_t>& args,
+	cParse::Parse_t& pos)
 {
+	// get name
 	cParse::Parse_t	tmp = pos;
-	defineName_t ret = {-1};
-
-	// get define name
-	if((!tmp.chk(1))
-	||(tmp->value() != CTOK_NAME)) 
-		return ret;
-	ret.name = tmp.fi().cStr();
-
-	// skip defines with args
-	if(tmp->value() == CTOK_LBR) { if(!tmp.chk(2) 
-		|| (tmp[1].value() != CTOK_RBR)) return ret;
-		tmp.data += 2; ret.type++; }
-
-	// success
-	ret.type++;
-	pos = tmp; return ret;
+	defineName_t ret = {-1,
+		tmp.fi().cStr()};
+	
+	// get arguments
+	ret.type = tmp.getArgs(args);
+	if(ret.type >= 0) pos = tmp; 
+	return ret;
 }
 
+/*
 define_t* lookup_define(defineName_t& name)
 {
 	for(auto& def : defList) {
@@ -50,6 +46,8 @@ define_t* lookup_define(defineName_t& name)
 			return &def;
 	} return NULL;
 }
+
+/*
 
 void parse_define(cParse::Parse_t pos)
 {
@@ -70,7 +68,7 @@ void parse_define(cParse::Parse_t pos)
 	// update item
 	x->toks = pos;
 
-}
+} */
 
 void print_tokens(cParse::Parse_t x, int flags)
 {
@@ -101,38 +99,50 @@ void parse_methods(cParse::Parse_t pos)
 			// skip operators
 			if(pos->value() != CTOK_NAME) {
 				pos.fi(); continue; }
-	
-			// lookup macro
-			auto defName = parse_defName(pos);
-			if(defName.type >= 0) {
-				if((!defName.name.cmp("PURE"))
-				||(!defName.name.cmp("DEFINE_ABSTRACT_UNKNOWN")))
-					continue;
-					
-				auto* macro = lookup_define(defName);
-				if(macro) parse_methods(macro->toks);
-				else { error(defName.name, "unknown macro: %.*s", 
-					defName.name.prn()); }
-				continue;
-			}
+				
+			printf("!!! %.*s\n", pos->cStr().prn());
+				
+			// parse name
+			auto item = parse_defName(args, pos);
+			if(item.type < 0) { 
+				error(pos->str, "bad args"); break; }
 
-			// get function call
-			cstr name = pos.getCall(args);
+			// STDMETHOD_
 			if((args.size() != 2)
-			||(name.cmp("STDMETHOD_"))) {
+			||(item.name.cmp("STDMETHOD_"))) {
 			
+			
+				// STDMETHOD
 				if((args.size() == 1)
-				&&(!name.cmp("STDMETHOD"))) {
+				&&(!item.name.cmp("STDMETHOD"))) {
 					args.xresize(2);
 					args[1] = args[0];
 					args[0] = {(cParse::Token*)&hresult, 1};
 					
 				} else {
+				
+					// filter names
+					if((!item.name.cmp("PURE"))
+					||(!item.name.cmp("DEFINE_ABSTRACT_UNKNOWN")))
+						continue;
+						
+					// lookup macro
+					
+					
+					
+					
+						
+				
+				
+					printf("%.*s\n", pos->cStr().prn());
+				
+				
+				
+				
 					error(pos->str, "bad function"); 
 					continue;
 				}
 			}
-				
 			
 			// method type and name
 			print_tokens(args[0], s_printFlag);
@@ -151,7 +161,7 @@ void parse_methods(cParse::Parse_t pos)
 				// print argument
 				print_tokens(x, args.data() != &x);
 			}
-			
+
 			fputs("]]", s_fpOut);
 	}
 }
@@ -172,10 +182,10 @@ void parse_interface(cch* name)
 		while(pos.chk())
 		{
 			// parse any macros
-			if(pos.cppType() == CPP_DEFINE) {
-				parse_define(pos.cppBlock());
-				continue;
-			}
+			//if(pos.cppType() == CPP_DEFINE) {
+			//	parse_define(pos.cppBlock());
+			//	continue;
+			//}
 			
 			// get interface
 			cstr name = pos.getCall(args);
