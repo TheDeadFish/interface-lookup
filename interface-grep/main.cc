@@ -92,21 +92,54 @@ void print_tokens(cParse::Parse_t x, int flags)
 }
 
 
-void parse_methods(cParse::Parse_t pos)
+void parse_methods(bool idlMode, cParse::Parse_t pos)
 {
 	static const cParse::Token hresult = 
 		cParse::Token::make(CTOK_NAME, "HRESULT");
 
 	while(pos.chk())
 	{
-			// skip operators
-			if(pos->value() != CTOK_NAME) {
-				pos.fi(); continue; }
+		// skip operators
+		if(pos->value() != CTOK_NAME) {
 
-			// parse name
-			auto item = parse_defName(pos);
-			if(item.type < 0) { 
-				error(pos->str, "bad args"); break; }
+			// skip idl attributes
+			if((idlMode)
+			&&(pos->value() == CTOK_LQBR)) {
+				pos.splitR(CTOK_RQBR); continue; }
+
+			// skip operator
+			pos.fi(); continue;
+		}
+
+		// parse name
+		auto item = parse_defName(pos);
+		if(item.type < 0) {
+			error(pos->str, "bad args"); break; }
+
+		if(idlMode)
+		{
+			// validate function type
+			if(item.type != 0) {
+				if(!item.name.cmp("cpp_quote")) continue;
+				error(pos->str, "bad idl function type"); break; }
+
+			// skip typedef, enum, const
+			if((!item.name.cmp("typedef"))
+			||(!item.name.cmp("enum"))
+			||(!item.name.cmp("const"))) {
+				pos.splitR_stmtEnd(); continue; }
+
+			// validate function name
+			if(!pos.chk() || (pos->value() != CTOK_NAME)) {
+				error(pos->str, "bad idl function name"); break; }
+
+			// get idl function type/name
+			s_args.xresize(2);
+			s_args[0] = {&pos[-1],1};
+			s_args[1] = {&pos[0],1};
+			pos.fi();
+
+		} else {
 
 			// STDMETHOD_
 			if((s_args.size() != 2)
@@ -132,12 +165,13 @@ void parse_methods(cParse::Parse_t pos)
 						continue;
 
 					auto* macro = lookup_define(item);
-					if(macro) parse_methods(macro->toks);
+					if(macro) parse_methods(false, macro->toks);
 					else { error(item.name, "bad function: %.*s", 
 						item.name.prn()); }
 					continue;
 				}
 			}
+		}
 			
 			// method type and name
 			print_tokens(s_args[0], s_printFlag);
@@ -160,7 +194,6 @@ void parse_methods(cParse::Parse_t pos)
 			fputs("]]", s_fpOut);
 	}
 }
-
 
 void parse_interface(cch* name)
 {
@@ -185,11 +218,32 @@ void parse_interface(cch* name)
 			if(pos->value() != CTOK_NAME) {
 				pos.fi(); continue; }
 
-			// get interface
-			cstr name = pos.getCall2(s_args);
-			if(s_args.size() != 2) continue;
-			if(name.cmp("DECLARE_INTERFACE_")) 
-				continue;
+			// idl interface
+			bool idlMode = false;
+			if(!pos->cStr().cmp("interface"))
+			{
+				// validate idl
+				pos.fi(); if((!pos.chk(3))
+				||(pos[0].value() != CTOK_NAME)
+				||(pos[1].value() != CTOK_COLON)
+				||(pos[2].value() != CTOK_NAME))
+					continue;
+
+				// get idl type
+				s_args.xresize(2);
+				s_args[0] = {&pos[0],1};
+				s_args[1] = {&pos[2],1};
+				idlMode = true;
+				pos.data += 3;
+
+			} else {
+
+				// get interface
+				cstr name = pos.getCall2(s_args);
+				if(s_args.size() != 2) continue;
+				if(name.cmp("DECLARE_INTERFACE_"))
+					continue;
+			}
 				
 			// print interface
 			print_tokens(s_args[0], 2);
@@ -197,11 +251,9 @@ void parse_interface(cch* name)
 		
 			// parse methods
 			s_printFlag = 2;
-			parse_methods(pos.splitR(CTOK_RCBR));
+			parse_methods(idlMode, pos.splitR_brClose(CTOK_LCBR));
 			fputs("]]\n", s_fpOut);
-			
 		}
-		
 		
 		defList.Clear();
 		
