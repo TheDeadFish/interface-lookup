@@ -11,13 +11,22 @@ static cParse* s_cParse;
 static const char* s_curFile;
 static xVector<cParse::Parse_t> s_args;
 
+
+void error(char* str, cch* fmt, ...)
+{
+	va_list va; va_start (va, fmt);
+	vprintf (fmt, va);
+
+	printf(" @%d:%d\n",
+		s_cParse->getLine(str));
+}
+
 struct defineName_t {
 	int type; cstr name; 
 };
 
 struct define_t {
-	cstr name; 
-	xarray<cstr> args;
+	cstr name; int nArgs;
 	cParse::Parse_t toks;
 };
 
@@ -29,17 +38,18 @@ defineName_t parse_defName(
 	// get call
 	defineName_t ret = {-1,
 		pos.getCall2(s_args)};
-	if(ret.name.slen)
+	if(ret.name.slen) {
 		ret.type = cParse::fixArgs(s_args);
-	return ret;
+		if(ret.type > 0) ret.type = s_args.size()+1;
+	} return ret;
 }
 
 define_t* lookup_define(defineName_t& name)
 {
-	int nArgs = name.type>0 ? s_args.size() : -1;
+	int nArgs = name.type-1;
 
 	for(auto& def : defList) {
-		if(def.args.len == nArgs
+		if(def.nArgs == nArgs
 		&&(!def.name.cmp(name.name)))
 			return &def;
 	} return NULL;
@@ -51,10 +61,16 @@ void parse_define(cParse::Parse_t pos)
 	pos.data += 2;
 	auto name = parse_defName(pos);
 	if(name.type < 0) return;
-	
+
 	// skip defines without STDMETHOD_
 	if(!pos.text().str("STDMETHOD_"))
 		return;
+
+	// validate define
+	if(!pos.defineInit(s_args)) {
+		error(name.name, "bad define");
+		return; }
+
 	// lookup/allocate item
 	define_t* x = lookup_define(name);
 	if(!x) { x = &defList.xnxcalloc(); 
@@ -62,14 +78,8 @@ void parse_define(cParse::Parse_t pos)
 
 	// update item
 	x->toks = pos;
-
-	// copy args
-	if(name.type == 0) {
-		x->args.len = -1;
-	} else {
-		for(auto& arg : s_args)
-			x->args.push_back(arg->cStr());
-	}
+	x->nArgs = name.type-1;
+	//printf("%d, %.*s\n", name.type-1, name.name.prn());
 }
 
 void print_tokens(cParse::Parse_t x, int flags)
@@ -81,14 +91,6 @@ void print_tokens(cParse::Parse_t x, int flags)
 	if(flags & 4) fputs(", [", s_fpOut);
 }
 
-void error(char* str, cch* fmt, ...)
-{
-	va_list va; va_start (va, fmt);
-	vprintf (fmt, va);
-
-	printf("@ %d:%d\n", 
-		s_cParse->getLine(str));
-}
 
 void parse_methods(cParse::Parse_t pos)
 {
