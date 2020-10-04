@@ -91,6 +91,25 @@ void print_tokens(cParse::Parse_t x, int flags)
 	if(flags & 4) fputs(", [", s_fpOut);
 }
 
+void idl_attrib(cParse::Parse_t& toks)
+{
+	int flags = 0;
+	while(toks->value() == CTOK_LQBR) {
+		auto atribs = toks.splitR(CTOK_RQBR);
+
+		// find in/out attributes
+		for(auto& tok : atribs) {
+			if(!tok.cStr().cmp("out")) flags |= 1;
+			if(!tok.cStr().cmp("in")) flags |= 2;
+		}
+	}
+
+	// prepend IN/OUT tokens
+	if(flags & 1) { toks.data--;
+		*toks = cParse::Token::make(CTOK_NAME, "OUT"); }
+	if(flags & 2) { toks.data--;
+		*toks = cParse::Token::make(CTOK_NAME, "IN"); }
+}
 
 bool parse_methods(bool idlMode, cParse::Parse_t pos)
 {
@@ -198,6 +217,7 @@ bool parse_methods(bool idlMode, cParse::Parse_t pos)
 				if(!x.chk()) continue;
 				
 				// print argument
+				idl_attrib(x);
 				print_tokens(x, s_args.data() != &x);
 			}
 
