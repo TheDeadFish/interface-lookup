@@ -115,7 +115,8 @@ void parse_methods(cParse::Parse_t pos)
 			
 				// STDMETHOD
 				if((s_args.size() == 1)
-				&&(!item.name.cmp("STDMETHOD"))) {
+				&&((!item.name.cmp("STDMETHOD"))
+				||(!item.name.cmp("STDMETHODV")))) {
 					s_args.xresize(2);
 					s_args[1] = s_args[0];
 					s_args[0] = {(cParse::Token*)&hresult, 1};
@@ -124,7 +125,10 @@ void parse_methods(cParse::Parse_t pos)
 				
 					// filter names
 					if((!item.name.cmp("PURE"))
-					||(!item.name.cmp("DEFINE_ABSTRACT_UNKNOWN")))
+					||(!item.name.cmp("DEFINE_ABSTRACT_UNKNOWN"))
+					||(!item.name.cmp("public"))
+					||(!item.name.cmp("BEGIN_INTERFACE"))
+					||(!item.name.cmp("END_INTERFACE")))
 						continue;
 
 					auto* macro = lookup_define(item);
