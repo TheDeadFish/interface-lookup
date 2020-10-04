@@ -17,7 +17,7 @@ void error(char* str, cch* fmt, ...)
 	va_list va; va_start (va, fmt);
 	vprintf (fmt, va);
 
-	printf(" @%d:%d\n",
+	printf(" @%s:%d:%d\n", s_curFile,
 		s_cParse->getLine(str));
 }
 
@@ -92,7 +92,7 @@ void print_tokens(cParse::Parse_t x, int flags)
 }
 
 
-void parse_methods(bool idlMode, cParse::Parse_t pos)
+bool parse_methods(bool idlMode, cParse::Parse_t pos)
 {
 	static const cParse::Token hresult = 
 		cParse::Token::make(CTOK_NAME, "HRESULT");
@@ -114,14 +114,16 @@ void parse_methods(bool idlMode, cParse::Parse_t pos)
 		// parse name
 		auto item = parse_defName(pos);
 		if(item.type < 0) {
-			error(pos->str, "bad args"); break; }
+			error(pos->str, "bad args");
+			return false; }
 
 		if(idlMode)
 		{
 			// validate function type
 			if(item.type != 0) {
 				if(!item.name.cmp("cpp_quote")) continue; ERR:
-				error(pos->str, "bad idl function"); break; }
+				error(pos->str, "bad idl function");
+				return false; }
 
 			// skip typedef, enum, const
 			if((!item.name.cmp("typedef"))
@@ -201,6 +203,8 @@ void parse_methods(bool idlMode, cParse::Parse_t pos)
 
 			fputs("]]", s_fpOut);
 	}
+
+	return true;
 }
 
 void parse_interface(cch* name)
@@ -263,13 +267,15 @@ void parse_interface(cch* name)
 			}
 				
 			// print interface
+			size_t prevPos = ftell(s_fpOut);
 			print_tokens(s_args[0], 2);
 			print_tokens(s_args[1], 5);
 		
 			// parse methods
 			s_printFlag = 2;
-			parse_methods(idlMode, pos.splitR_brClose(CTOK_LCBR));
-			fputs("]]\n", s_fpOut);
+			if(parse_methods(idlMode, pos.splitR_brClose(CTOK_LCBR)))
+				fputs("]],\n", s_fpOut);
+			else fseek(s_fpOut, prevPos, SEEK_SET);
 		}
 		
 		defList.Clear();
@@ -281,8 +287,6 @@ size_t __stdcall findcb(int, FindFiles_t& ff)
 {
 	if(!strcmp(ff.cFileName, "interface-grep.txt"))
 		return 0;
-
-	printf("%s\n", ff.fName.data);
 	parse_interface(ff.fName.data);
 
 	return 0;
@@ -290,6 +294,9 @@ size_t __stdcall findcb(int, FindFiles_t& ff)
 
 int main(int argc, char* argv[])
 {
-	s_fpOut = fopen("interface-grep.txt", "w");
+	s_fpOut = fopen("interface-list.py", "w");
+	fputs("interface = [\n", s_fpOut);
 	findFiles(".", 0, 0, findcb);
+	fputs("]", s_fpOut);
+	return 0;
 }
