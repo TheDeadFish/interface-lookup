@@ -163,6 +163,7 @@ class Interface_Group:
 
 class Interface_List:
 	def __init__(self, s=None):
+		self.state = 0;
 		self.groups = []
 		if s: self.merge(s)
 
@@ -173,9 +174,15 @@ class Interface_List:
 			if diff >= 0: return
 		self.groups.append(Interface_Group(inter))
 
+	# common Interface properties
+	def trim_funcs(self, funcList):
+		return self.groups[0].trim_funcs(funcList)
+	def list_funcs(self, funcList=None):
+		return self.groups[0].list_funcs(funcList)
 	@property
-	def type(self):
-		return self.groups[0].type
+	def type(self): return self.groups[0].type
+	@property
+	def base(self): return self.groups[0].base
 
 	def bad(self):
 		assert(len(self.groups) != 0)
@@ -186,6 +193,32 @@ class Interface_List:
 		for x in self.groups:
 			s += '  %s : %s\n    %s\n' % (x.base, x.str_funcs(), argsStr_(x.files))
 		return s + '}\n\n'
+
+	def err(self, msg):
+		if self.state < 0: return;
+		self.state = -1
+		print '%s\n%s\n' % (msg, str(self))
+
+	def process(self, dict):
+
+		if self.type == "IUnknown":
+			return self.list_funcs();
+		if self.state < 0: return None
+		if self.bad():
+			self.err('conflict'); return None
+
+		# check base class
+		if self.base not in dict:
+			self.err('base not found:'); return None
+		funcList = dict[self.base].process(dict)
+		if funcList == None:
+			self.err('bad base:');	return None
+
+		# combine core
+		if self.state == 0:
+			self.state = 1
+			self.trim_funcs(funcList);
+		return self.list_funcs(funcList);
 
 # create interface list
 with open('interface_reject.txt', 'r') as f:
@@ -204,36 +237,4 @@ for s in interface:
 		interfaceDict.setdefault(s[0], Interface_List()).merge(s)
 
 for k,v in interfaceDict.iteritems():
-	if v.bad(): print v
-
-
-"""
-def prepare_base(name, funcNames):
-	if name in interfaceDict:
-		print "interface not found: ", name
-		return -1
-
-
-
-
-
-	if name == "IUnknown": return 1;
-
-
-	xLst = interfaceDict[name]
-	for inter in xLst:
-		prepare_base(inter.name, funcNames)
-
-
-
-
-
-
-
-
-
-	# add items to list
-	for func in inter.funcs:
-		funcNames.append(func.name)
-	return 1
-"""
+	v.process(interfaceDict)
