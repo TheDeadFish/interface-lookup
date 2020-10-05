@@ -19,6 +19,12 @@ class FuncArg:
 		if self.name != that.name: return 0;
 		return 1;
 
+	def __str__(self):
+		s = self.type
+		if self.name:
+			s += ' '+self.name
+		return s
+
 class Function:
 	def __init__(self, x):
 		self.type = x[0]
@@ -35,6 +41,15 @@ class Function:
 			diff = self.args[i].cmp(that.args[i])
 			if diff <= 0: return 0
 		return 1
+
+	def __str__(self):
+		s = '%s %s(' % (self.type, self.name)
+		needComma = False
+		for x in self.args:
+			if needComma: s += ', '
+			needComma = True
+			s += str(x)
+		return s+');'
 
 class Interface:
 	def __init__(self, x):
@@ -70,6 +85,12 @@ class Interface:
 		for func in self.funcs:
 			funcList.append(func.name)
 
+	def __str__(self):
+		s = 'interface %s : %s\n{\n' % (self.type, self.base)
+		for func in self.funcs:
+			s += '\t%s\n' % str(func)
+		return s+'}\n\n'
+
 # create interface list
 interfaceDict = {"IUnknown":Interface(IUnknown)}
 
@@ -78,9 +99,10 @@ def add_interface(s):
 	xLst = interfaceDict.setdefault(s[0], [])
 	inter = Interface(s)
 	for x in xLst:
+		if inter.cmp(x) > 0: return
+	for x in xLst:
 		diff = inter.cmp(x)
-		if diff > 0: return
-		print inter.type, diff
+		if diff < 0: print diff, x, inter
 	xLst.append(inter)
 
 for s in interface:
