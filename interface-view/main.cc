@@ -9,11 +9,28 @@ const char progName[] = "interface-view";
 static InterfaceData s_iData;
 static HWND s_hList;
 static WndResize s_resize;
+static int nTabPage;
+
+void ShowDlgItem(HWND hwnd, int id, BOOL show)
+{
+	hwnd = GetDlgItem(hwnd, id);
+	ShowWindow(hwnd, show ? SW_SHOW : SW_HIDE);
+}
 
 void loadFile(HWND hwnd, cch* file)
 {
 	if(file && s_iData.load(file))
 		contError(hwnd, "failed to load def list: %s\n", file);
+}
+
+void item_select(HWND hwnd);
+void selectTab(HWND hwnd)
+{
+	int nPage = getDlgTabPage(hwnd, IDC_TAB);
+	ShowDlgItem(hwnd, IDC_LIST1, nPage == 0);
+	ShowDlgItem(hwnd, IDC_EDIT, nPage != 0);
+	nTabPage = nPage;
+	item_select(hwnd);
 }
 
 void nameEdtChange(HWND hwnd);
@@ -22,8 +39,12 @@ void mainDlgInit(HWND hwnd, cch* file)
 	s_resize.init(hwnd);
 	s_resize.add(hwnd, IDC_NAME, HOR_BOTH);
 	s_resize.add(hwnd, IDC_VERSION, HOR_BOTH);
-	s_resize.add(hwnd, IDC_LIST1, HOR_BOTH);
+	s_resize.add(hwnd, IDC_LIST1, HVR_BOTH);
 	s_resize.add(hwnd, IDC_EDIT, HVR_BOTH);
+
+	addDlgTabPage(hwnd, IDC_TAB, 0, "List");
+	addDlgTabPage(hwnd, IDC_TAB, 1, "Class");
+	addDlgTabPage(hwnd, IDC_TAB, 2, "Vtab");
 
 	loadFile(hwnd, file);
 
@@ -35,16 +56,28 @@ void mainDlgInit(HWND hwnd, cch* file)
 	lstView_insColumn(s_hList, 1, 100, "Base");
 	lstView_insColumn(s_hList, 2, 78, "File");
 	ListView_SetColumnWidth(s_hList, 2, LVSCW_AUTOSIZE_USEHEADER);
+
 	nameEdtChange(hwnd);
+	selectTab(hwnd);
 }
 
 void item_select(HWND hwnd)
 {
 	int nSel = listView_getCurSel(s_hList);
-	/*if((nSel < 0)||(s_valIndex == 2)) return;
-	WCHAR buff[100];
-	lstView_getText(s_hList, nSel, s_valIndex, buff, 100);
-	SetDlgItemTextW(hwnd, IDC_MASK, buff); */
+	if(nSel < 0) return;
+
+	if(nTabPage == 1) {
+		Bstr str;
+		InterfaceData::Interface* inter = Void(lstView_getData(s_hList, nSel));
+		inter->fmtFuncs(str, 0, 4);
+
+
+
+
+
+
+		setDlgItemText(hwnd, IDC_EDIT, str.data);
+	}
 }
 
 void nameEdtChange(HWND hwnd)
@@ -53,14 +86,13 @@ void nameEdtChange(HWND hwnd)
 	char buff[100];
 	GetDlgItemTextA(hwnd, IDC_NAME, buff, 100);
 	xArray lst = s_iData.find(buff);
-	printf("%X, %X\n", lst.data, lst.len);
 
 	SetWindowRedraw(s_hList, FALSE);
 	ListView_DeleteAllItems(s_hList);
 	ListView_SetItemCount(s_hList, lst.len);
 
 	for(auto* x : lst) {
-		int i = lstView_iosText(s_hList, -1, x->type);
+		int i = lstView_iosText(s_hList, -1, x->type, (LPARAM)x);
 		lstView_iosText(s_hList, i, 1, x->base);
 		//lstView_iosText(s_hList, i, 2, x->value);
 	}
@@ -81,9 +113,11 @@ BOOL CALLBACK mainDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		CASE_COMMAND(
 			ON_COMMAND(IDCANCEL, EndDialog(hwnd, 0))
 			ON_CONTROL(EN_CHANGE, IDC_NAME, nameEdtChange(hwnd))
+
 	  ,)
 
 		CASE_NOTIFY(
+			ON_NOTIFY(TCN_SELCHANGE, IDC_TAB, selectTab(hwnd))
 			ON_LVN_NOTIFY(LVN_ITEMCHANGED, IDC_LIST1, item_select(hwnd))
 	  ,)
 	,)
