@@ -8,6 +8,27 @@ IUnknown = [ "IUnknown", None, "",
 	[["HRESULT", "QueryInterface", ["REFIID riid", "void**out"]],
 	["ULONG", "AddRef", []], ["ULONG", "Release", []]]]
 
+def argsStr_(args):
+	s = ""
+	needComma = False
+	for x in args:
+		if needComma: s += ', '
+		needComma = True
+		s += str(x)
+	return s
+
+def argsStr(type, name, args):
+	return '%s %s(%s)' % (type, name, argsStr_(args))
+
+def funcStr(funcs):
+	s = ""
+	for func in funcs:
+		s += '\t%s\n' % str(func)
+	return s
+
+def interStr(type, base, funcs):
+	return 'interface %s : %s\n{\n%s}\n\n' % (type, base, funcs)
+
 class FuncArg:
 	def __init__(self, x):
 		x = re.match(r'(.*?)\s*?(\w+)?$', x.strip())
@@ -42,14 +63,14 @@ class Function:
 			if diff <= 0: return 0
 		return 1
 
+	def nArgs(self):
+		return len(self.args)
+
+	def lnStr(self):
+		return '%s@%d' % (self.name, self.nArgs())
+
 	def __str__(self):
-		s = '%s %s(' % (self.type, self.name)
-		needComma = False
-		for x in self.args:
-			if needComma: s += ', '
-			needComma = True
-			s += str(x)
-		return s+');'
+		return argsStr(self.type, self.name, self.args)
 
 class Interface:
 	def __init__(self, x):
@@ -82,20 +103,28 @@ class Interface:
 				del self.funcs[i]
 			else: i += 1
 
-	def list_funcs(self, funcList):
+	def list_funcs(self, funcList=None):
+		if funcList == None: funcList = []
 		for func in self.funcs:
 			funcList.append(func.name)
+		return funcList;
+
+
+	def str_funcs(self):
+		def xxx():
+			for x in self.funcs: yield x.lnStr()
+		return argsStr_(xxx())
 
 	def __str__(self):
-		s = 'interface %s : %s\n{\n' % (self.type, self.base)
-		for func in self.funcs:
-			s += '\t%s\n' % str(func)
-		return s+'}\n\n'
+		return interStr(self.type, self.base, funcStr(self.funcs))
 
 	def merge(self, inter):
 		diff = self.cmp(inter)
-		self.files += inter.files
+		if diff > 0: self.files += inter.files
 		return diff
+
+	def nFuncs(self):
+		return len(self.funcs)
 
 class Interface_Group:
 	def __init__(self, inter):
@@ -111,29 +140,60 @@ class Interface_Group:
 			self.inters.append(inter)
 		return bestDiff
 
+	# merged Interface properties
+	def trim_funcs(self, funcList):
+		for inter in self.inters:
+			inter.trim_funcs(funcList)
+	@property
+	def files(self):
+		files = []
+		for inter in self.inters:
+			files += inter.files
+		return files
+
+	# common Interface properties
+	def list_funcs(self, funcList=None):
+		return self.inters[0].list_funcs(funcList)
+	def str_funcs(self): return self.inters[0].str_funcs()
+	def nFuncs(self): return self.inters[0].nFuncs()
+	@property
+	def type(self):	return self.inters[0].type
+	@property
+	def base(self): return self.inters[0].base
+
+class Interface_List:
+	def __init__(self, s=None):
+		self.groups = []
+		if s: self.merge(s)
+
+	def merge(self, s):
+		inter = Interface(s)
+		for x in self.groups:
+			diff = x.merge(inter)
+			if diff >= 0: return
+		self.groups.append(Interface_Group(inter))
+
+	@property
+	def type(self):
+		return self.groups[0].type
+
+	def bad(self):
+		assert(len(self.groups) != 0)
+		return len(self.groups) > 1
+
+	def __str__(self):
+		s = 'interface %s {\n' % self.type
+		for x in self.groups:
+			s += '  %s : %s\n    %s\n' % (x.base, x.str_funcs(), argsStr_(x.files))
+		return s + '}\n\n'
+
 # create interface list
-interfaceDict = {"IUnknown":Interface(IUnknown)}
-
-
-def add_interface(s):
-	xLst = interfaceDict.setdefault(s[0], [])
-	inter = Interface(s)
-	for x in xLst:
-		diff = x.merge(inter)
-		if diff >= 0: return
-		print inter.type
-
-	xLst.append(Interface_Group(inter))
-
+interfaceDict = {"IUnknown":Interface_List(IUnknown)}
 for s in interface:
-	add_interface(s)
+	interfaceDict.setdefault(s[0], Interface_List()).merge(s)
 
-
-
-
-
-
-
+for k,v in interfaceDict.iteritems():
+	if v.bad(): print v
 
 
 """
