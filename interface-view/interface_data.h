@@ -4,21 +4,22 @@ struct InterfaceData
 {
 	struct Interface
 	{
+		Interface* pBase;
 		char* type;
 		char* base;
 
 		struct ArgsSet {
-			char* fileName;
-			char* type;
-			xarray<char*> arg;
+			char* files;
+			xMem<xMem<char*>> x;
 		};
 
 
-
-		xarray<ArgsSet> argSet;
+		xArray<char*> funcs;
+		xArray<ArgsSet> argSet;
 	};
 
-	xarray<Interface> iLst;
+	xArray<Interface> iLst;
 
 	int load(cch* file);
+	xarray<Interface*> find(char* str);
 };

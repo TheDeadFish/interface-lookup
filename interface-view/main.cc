@@ -2,10 +2,19 @@
 #include <win32hlp.h>
 #include "resource.h"
 #include "resize.h"
+#include "interface_data.h"
+
 const char progName[] = "interface-view";
 
+static InterfaceData s_iData;
 static HWND s_hList;
 static WndResize s_resize;
+
+void loadFile(HWND hwnd, cch* file)
+{
+	if(file && s_iData.load(file))
+		contError(hwnd, "failed to load def list: %s\n", file);
+}
 
 void nameEdtChange(HWND hwnd);
 void mainDlgInit(HWND hwnd, cch* file)
@@ -16,7 +25,7 @@ void mainDlgInit(HWND hwnd, cch* file)
 	s_resize.add(hwnd, IDC_LIST1, HOR_BOTH);
 	s_resize.add(hwnd, IDC_EDIT, HVR_BOTH);
 
-	//loadFile(hwnd, file);
+	loadFile(hwnd, file);
 
 	s_hList = GetDlgItem(hwnd, IDC_LIST1);
 	ListView_SetExtendedListViewStyle(s_hList,
@@ -41,31 +50,26 @@ void item_select(HWND hwnd)
 void nameEdtChange(HWND hwnd)
 {
 	// prefix search
-	/*char buff[100];
+	char buff[100];
 	GetDlgItemTextA(hwnd, IDC_NAME, buff, 100);
-	xArray list = s_defLst.find(buff);
+	xArray lst = s_iData.find(buff);
+	printf("%X, %X\n", lst.data, lst.len);
 
-	// get value
-	GetDlgItemTextA(hwnd, IDC_VAL, buff, 100);
-	char* end; u64 val = strtoui64(buff, &end);
-	s_valIndex = !buff[0];
+	SetWindowRedraw(s_hList, FALSE);
+	ListView_DeleteAllItems(s_hList);
+	ListView_SetItemCount(s_hList, lst.len);
 
-	// handle mask mode
-	SetDlgItemTextA(hwnd, IDC_MASK, "");
-	if(IsDlgButtonChecked(hwnd, IDC_MASKMODE)) {
-		xArray num = s_defLst.numGet(list);
-		compute_mask(hwnd, num, val);
-		listViewInit(hwnd, num);
-		return;
+	for(auto* x : lst) {
+		int i = lstView_iosText(s_hList, -1, x->type);
+		lstView_iosText(s_hList, i, 1, x->base);
+		//lstView_iosText(s_hList, i, 2, x->value);
 	}
 
-	// handle number mode
-	if(end != NULL) {
-		xArray num = s_defLst.numFind(list, val);
-		listViewInit(hwnd, num);
-	} else {
-		listViewInit(hwnd, list);
-	}*/
+	ListView_SetItemState(s_hList, 0,
+		LVIS_FOCUSED | LVIS_SELECTED, 0xF);
+
+	SetWindowRedraw(s_hList, TRUE);
+	item_select(hwnd);
 }
 
 BOOL CALLBACK mainDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
