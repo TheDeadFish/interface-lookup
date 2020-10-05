@@ -96,12 +96,13 @@ class Interface:
 		return retVal
 
 	def trim_funcs(self, funcList):
-		i = 0
+		retVal = False; i = 0;
 		for name in funcList:
 			if i >= len(self.funcs): break;
 			if self.funcs[i].name == name:
-				del self.funcs[i]
+				del self.funcs[i]; retVal = True
 			else: i += 1
+		return retVal;
 
 	def list_funcs(self, funcList=None):
 		if funcList == None: funcList = []
@@ -142,8 +143,11 @@ class Interface_Group:
 
 	# merged Interface properties
 	def trim_funcs(self, funcList):
+		retVal = False
 		for inter in self.inters:
-			inter.trim_funcs(funcList)
+			retVal = inter.trim_funcs(funcList)
+		return retVal
+
 	@property
 	def files(self):
 		files = []
@@ -192,12 +196,15 @@ class Interface_List:
 		s = 'interface %s {\n' % self.type
 		for x in self.groups:
 			s += '  %s : %s\n    %s\n' % (x.base, x.str_funcs(), argsStr_(x.files))
-		return s + '}\n\n'
+		return s + '}\n'
+
+	def warn(self, msg):
+		print '[%s]\n%s\n' % (msg, str(self))
 
 	def err(self, msg):
 		if self.state < 0: return;
 		self.state = -1
-		print '%s\n%s\n' % (msg, str(self))
+		self.warn(msg)
 
 	def process(self, dict):
 
@@ -209,16 +216,18 @@ class Interface_List:
 
 		# check base class
 		if self.base not in dict:
-			self.err('base not found:'); return None
+			self.err('base not found'); return None
 		funcList = dict[self.base].process(dict)
 		if funcList == None:
-			self.err('bad base:');	return None
+			self.err('bad base'); return None
 
 		# combine core
 		if self.state == 0:
 			self.state = 1
-			self.trim_funcs(funcList);
+			if self.trim_funcs(funcList):
+				self.warn('trimmed')
 		return self.list_funcs(funcList);
+
 
 # create interface list
 with open('interface_reject.txt', 'r') as f:
