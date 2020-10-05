@@ -29,38 +29,19 @@ def funcStr(funcs):
 def interStr(type, base, funcs):
 	return 'interface %s : %s\n{\n%s}\n\n' % (type, base, funcs)
 
-class FuncArg:
-	def __init__(self, x):
-		x = re.match(r'(.*?)\s*?(\w+)?$', x.strip())
-		self.type = x.group(1)
-		self.name = x.group(2)
-
-	def cmp(self, that):
-		if self.type != that.type: return -1;
-		if self.name != that.name: return 0;
-		return 1;
-
-	def __str__(self):
-		s = self.type
-		if self.name:
-			s += ' '+self.name
-		return s
-
 class Function:
 	def __init__(self, x):
 		self.type = x[0]
 		self.name = x[1]
-		self.args = []
-		for arg in x[2]:
-			self.args.append(FuncArg(arg))
+		self.args = x[2]
 
 	def cmp(self, that):
 		if self.name != that.name: return -2
 		if len(self.args) != len(that.args): return -1
 		if self.type != that.type: return 0
 		for i in range(len(self.args)):
-			diff = self.args[i].cmp(that.args[i])
-			if diff <= 0: return 0
+			if self.args[i] != that.args[i]:
+				return 0
 		return 1
 
 	def nArgs(self):
@@ -206,6 +187,12 @@ class Interface_List:
 		self.state = -1
 		self.warn(msg)
 
+	@property
+	def inters(self):
+		for x in self.groups:
+			for y in x.inters:
+				yield y
+
 	def process(self, dict):
 
 		if self.type == "IUnknown":
@@ -247,3 +234,21 @@ for s in interface:
 
 for k,v in interfaceDict.iteritems():
 	v.process(interfaceDict)
+
+# produce output
+fpOut = open('interface_data.txt', 'w')
+for k,v in interfaceDict.iteritems():
+	if v.state < 1: continue
+
+	# write type, base, functions
+	fpOut.write("#%s,%s" % (v.type, v.base))
+	for x in v.list_funcs():
+		fpOut.write(",%s" % x)
+	fpOut.write("\n")
+
+	# write filenames and arguments
+	for inter in v.inters:
+		fpOut.write(','.join(inter.files)+'\n')
+		for func in inter.funcs:
+			fpOut.write('%s,%s' % (func.type, ','.join(func.args)))
+			fpOut.write('\n')
