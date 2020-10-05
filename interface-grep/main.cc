@@ -91,6 +91,19 @@ void print_tokens(cParse::Parse_t x, int flags)
 	if(flags & 4) fputs(", [", s_fpOut);
 }
 
+void print_fileName(cch* name)
+{
+	// escape the filename
+	Bstr str;
+	for(int i = 0; name[i]; i++) {
+		if(name[i] == '\\')
+			str.push_back(name[i]);
+		str.push_back(name[i]);
+	}
+
+	fprintf(s_fpOut, ", \"%s\", [", str.data);
+}
+
 void idl_attrib(cParse::Parse_t& toks)
 {
 	int flags = 0;
@@ -289,7 +302,8 @@ void parse_interface(cch* name)
 			// print interface
 			size_t prevPos = ftell(s_fpOut);
 			print_tokens(s_args[0], 2);
-			print_tokens(s_args[1], 5);
+			print_tokens(s_args[1], 1);
+			print_fileName(name);
 		
 			// parse methods
 			s_printFlag = 2;
