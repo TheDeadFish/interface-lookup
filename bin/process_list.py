@@ -188,9 +188,20 @@ class Interface_List:
 		return s + '}\n\n'
 
 # create interface list
+with open('interface_reject.txt', 'r') as f:
+	interfaceReject = [line.rstrip().split(',') for line in f]
 interfaceDict = {"IUnknown":Interface_List(IUnknown)}
+
+def match_reject(s):
+	for reject in interfaceReject:
+		match_file = (not reject[0]) or (reject[0] == s[2])
+		match_name = (len(reject)<2) or (reject[1] == s[0])
+		if match_file and match_name: return True
+	return False
+
 for s in interface:
-	interfaceDict.setdefault(s[0], Interface_List()).merge(s)
+	if not match_reject(s):
+		interfaceDict.setdefault(s[0], Interface_List()).merge(s)
 
 for k,v in interfaceDict.iteritems():
 	if v.bad(): print v
