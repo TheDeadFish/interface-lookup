@@ -4,7 +4,7 @@ import re
 from interface_list import interface;
 
 # IUnknown interface
-IUnknown = [ "IUnknown", None, "",
+IUnknown = [ "IUnknown", "NOBASE", "NOFILE",
 	[["HRESULT", "QueryInterface", ["REFIID riid", "void**out"]],
 	["ULONG", "AddRef", []], ["ULONG", "Release", []]]]
 
@@ -150,7 +150,9 @@ class Interface_List:
 	def __init__(self, s=None):
 		self.state = 0;
 		self.groups = []
-		if s: self.merge(s)
+		if s:
+			self.merge(s)
+			self.state = 1
 
 	def merge(self, s):
 		inter = Interface(s)

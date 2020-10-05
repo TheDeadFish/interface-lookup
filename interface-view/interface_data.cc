@@ -3,15 +3,13 @@
 
 static
 int compar(const InterfaceData::Interface& a, const InterfaceData::Interface& b) {
-	return stricmp(a.type, b.type); }
+	return strcmp(a.type, b.type); }
 static
 int findFn(cch* pkey, const InterfaceData::Interface& elem) {
 	return strcmp(pkey, elem.type); }
 
 int InterfaceData::load(cch* file)
 {
-	#define LINE_GET() *++curPos
-
 	// load text file
 	int nLines;
 	char** lines = loadText(file, nLines);
@@ -20,9 +18,11 @@ int InterfaceData::load(cch* file)
 
 	// loop over lines
 	char** curPos = lines;
-	char* type = strtok(*curPos, ",");
-	while(type && (type[0] == '#'))
+	while(1)
 	{
+		char* type = strtok(*curPos++, ",");
+		if(!type || (type[0] != '#')) break;
+
 		// create interface
 		auto& inter = iLst.xnxcalloc();
 		inter.type = type+1;
@@ -32,15 +32,15 @@ int InterfaceData::load(cch* file)
 		while(char* name = strtok(NULL, ",")) {
 			inter.funcs.push_back(name); }
 
-		do {
+		while(1) {
 			auto& argSet = inter.argSet.xnxcalloc();
-			argSet.files = LINE_GET();
+			argSet.files = *curPos++;
 			if(!argSet.files) return 2;
 
 			argSet.x.init(xMalloc(inter.funcs.len));
 			for(int i = 0; i < inter.funcs.len; i++) {
 				xarray<char*> tmp = {};
-				char* line = strtok(LINE_GET(), ",");
+				char* line = strtok(*curPos++, ",");
 				if(!line) return 2; tmp.push_back(line);
 				while(char* arg = strtok(NULL, ","))
 					tmp.push_back(arg);
@@ -48,10 +48,9 @@ int InterfaceData::load(cch* file)
 				argSet.x[i].init(tmp.data);
 			}
 
-			// advance position
-			type = strtok(LINE_GET(), ",");
-
-		} while(type && (type[0] != '#'));
+			if(!*curPos ||(*curPos)[0] == '#')
+				break;
+		}
 	}
 
 	// initialize pBase pointers
