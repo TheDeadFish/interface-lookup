@@ -4,7 +4,7 @@ import re
 from interface_list import interface;
 
 # IUnknown interface
-IUnknown = [ "IUnknown", None,
+IUnknown = [ "IUnknown", None, "",
 	[["HRESULT", "QueryInterface", ["REFIID riid", "void**out"]],
 	["ULONG", "AddRef", []], ["ULONG", "Release", []]]]
 
@@ -55,10 +55,11 @@ class Interface:
 	def __init__(self, x):
 		self.type = x[0];
 		self.base = x[1];
+		self.files = [x[2]]
 		self.funcs = []
 		self.done = False
 
-		for func in x[2]:
+		for func in x[3]:
 			self.funcs.append(Function(func))
 
 		if self.base == "IUnknown":
@@ -93,6 +94,7 @@ class Interface:
 
 	def merge(self, inter):
 		diff = self.cmp(inter)
+		self.files += inter.files
 		return diff
 
 class Interface_Group:
