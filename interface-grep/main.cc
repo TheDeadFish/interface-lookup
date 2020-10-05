@@ -314,7 +314,8 @@ size_t __stdcall findcb(int, FindFiles_t& ff)
 
 int main(int argc, char* argv[])
 {
-	s_fpOut = fopen("interface-list.py", "w");
+	char* fName = pathCatF(getProgramDir(), "interface_list.py");
+	s_fpOut = fopen(fName, "w");
 	fputs("interface = [\n", s_fpOut);
 	findFiles(".", 0, 0, findcb);
 	fputs("]", s_fpOut);
