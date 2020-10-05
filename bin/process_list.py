@@ -91,6 +91,24 @@ class Interface:
 			s += '\t%s\n' % str(func)
 		return s+'}\n\n'
 
+	def merge(self, inter):
+		diff = self.cmp(inter)
+		return diff
+
+class Interface_Group:
+	def __init__(self, inter):
+		self.inters = [inter]
+
+	def merge(self, inter):
+		bestDiff = -1
+		for x in self.inters:
+			diff = x.merge(inter)
+			bestDiff = max(bestDiff, diff)
+			if bestDiff > 0: break
+		if bestDiff == 0:
+			self.inters.append(inter)
+		return bestDiff
+
 # create interface list
 interfaceDict = {"IUnknown":Interface(IUnknown)}
 
@@ -99,11 +117,11 @@ def add_interface(s):
 	xLst = interfaceDict.setdefault(s[0], [])
 	inter = Interface(s)
 	for x in xLst:
-		if inter.cmp(x) > 0: return
-	for x in xLst:
-		diff = inter.cmp(x)
-		if diff < 0: print diff, x, inter
-	xLst.append(inter)
+		diff = x.merge(inter)
+		if diff >= 0: return
+		print inter.type
+
+	xLst.append(Interface_Group(inter))
 
 for s in interface:
 	add_interface(s)
