@@ -15,6 +15,8 @@ struct InterfaceData
 
 		int setSel;
 
+
+		// data access
 		xarray<char*> getArgs(int iFunc);
 
 		// text formatting
@@ -34,4 +36,8 @@ struct InterfaceData
 	xarray<Interface*> find(char* str);
 
 	Interface* find_exact(char* str);
+
+	#define INTERFACEDATA_INTERFACE_ITER(x, ...) { \
+		InterfaceData::Interface* pos = x; \
+		for(;pos;pos=pos->pBase) {__VA_ARGS__; } }
 };

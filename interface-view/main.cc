@@ -10,6 +10,7 @@ static InterfaceData s_iData;
 static HWND s_hList;
 static WndResize s_resize;
 static int nTabPage;
+static InterfaceData::Interface* s_curType;
 
 void ShowDlgItem(HWND hwnd, int id, BOOL show)
 {
@@ -61,21 +62,49 @@ void mainDlgInit(HWND hwnd, cch* file)
 	selectTab(hwnd);
 }
 
+void select_version(HWND hwnd)
+{
+	int iBase = dlgCombo_getSel(hwnd, IDC_BASE);
+	int iVer = dlgCombo_getSel(hwnd, IDC_VERSION);
+	InterfaceData::Interface* type = Void(dlgCombo_getData(hwnd, IDC_BASE, iBase));
+	if(type && (iVer >= 0)) type->setSel = iVer;
+	item_select(hwnd);
+}
+
+void select_base(HWND hwnd)
+{
+	int iSel = dlgCombo_getSel(hwnd, IDC_BASE);
+	InterfaceData::Interface* type = Void(dlgCombo_getData(hwnd, IDC_BASE, iSel));
+	dlgCombo_reset(hwnd, IDC_VERSION);
+	if(iSel >= 0) { for(auto& arg : type->argSet) {
+		dlgCombo_addStr(hwnd, IDC_VERSION, arg.files); }
+		dlgCombo_setSel(hwnd, IDC_VERSION, type->setSel); }
+	EnableDlgItem(hwnd, IDC_VERSION,
+		sendDlgMsg(hwnd, IDC_VERSION, CB_GETCOUNT)>1);
+}
+
+void init_base(HWND hwnd)
+{
+	dlgCombo_reset(hwnd, IDC_BASE);
+	INTERFACEDATA_INTERFACE_ITER(s_curType,
+		int iPos = dlgCombo_addStr(hwnd, IDC_BASE, pos->type);
+		dlgCombo_setData(hwnd, IDC_BASE, iPos, (LPARAM)pos););
+	dlgCombo_setSel(hwnd, IDC_BASE, 0);
+	EnableDlgItem(hwnd, IDC_BASE, !!s_curType);
+	select_base(hwnd);
+}
+
+
 void item_select(HWND hwnd)
 {
 	int nSel = listView_getCurSel(s_hList);
-	if(nSel < 0) return;
+	InterfaceData::Interface* type = Void(lstView_getData(s_hList, nSel));
+	if(!type || (s_curType != type)) { s_curType = type; init_base(hwnd); }
+	if(type == NULL) return;
 
 	if(nTabPage == 1) {
 		Bstr str;
-		InterfaceData::Interface* inter = Void(lstView_getData(s_hList, nSel));
-		inter->fmtFuncs(str, 0, 4);
-
-
-
-
-
-
+		type->fmtFuncs(str, 0, 4);
 		setDlgItemText(hwnd, IDC_EDIT, str.data);
 	}
 }
@@ -112,6 +141,8 @@ BOOL CALLBACK mainDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 		CASE_COMMAND(
 			ON_COMMAND(IDCANCEL, EndDialog(hwnd, 0))
+			ON_CONTROL(CBN_SELCHANGE, IDC_BASE, select_base(hwnd))
+			ON_CONTROL(CBN_SELCHANGE, IDC_VERSION, select_version(hwnd))
 			ON_CONTROL(EN_CHANGE, IDC_NAME, nameEdtChange(hwnd))
 
 	  ,)
