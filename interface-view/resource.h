@@ -10,3 +10,5 @@
 #define IDC_EDIT                                40004
 #define IDC_LIST1                               40005
 #define IDC_FONT                                40006
+#define IDC_X64                                 40007
+#define IDC_SIMPLE                              40008

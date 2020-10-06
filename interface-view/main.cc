@@ -108,8 +108,14 @@ void item_select(HWND hwnd)
 	if(type == NULL) return;
 
 	if(nTabPage == 1) {
+
+		// formatting config
+		InterfaceData::FmtConf fc;
+		fc.pSize = IsDlgButtonChecked(hwnd, IDC_X64) ? 8 : 4;
+		fc.simple = IsDlgButtonChecked(hwnd, IDC_SIMPLE);
+
 		Bstr str;
-		type->fmtFuncs(str, 0, 4);
+		type->fmtFuncs(str, 0, fc);
 		setDlgItemText(hwnd, IDC_EDIT, str.data);
 	}
 }
@@ -151,6 +157,8 @@ BOOL CALLBACK mainDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		ON_MESSAGE(WM_SIZE, s_resize.resize(hwnd, wParam, lParam))
 
 		CASE_COMMAND(
+			ON_COMMAND(IDC_X64, item_select(hwnd))
+			ON_COMMAND(IDC_SIMPLE, item_select(hwnd))
 			ON_COMMAND(IDCANCEL, EndDialog(hwnd, 0))
 			ON_COMMAND(IDC_FONT, select_font_(hwnd))
 			ON_CONTROL(CBN_SELCHANGE, IDC_BASE, select_base(hwnd))

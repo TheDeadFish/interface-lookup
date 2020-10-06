@@ -2,6 +2,8 @@
 
 struct InterfaceData
 {
+	struct FmtConf { int pSize; bool simple; };
+
 	struct Interface
 	{
 		Interface* pBase;
@@ -21,7 +23,8 @@ struct InterfaceData
 
 		// text formatting
 		void fmtFunc(bstr& str, int iFunc);
-		int fmtFuncs(bstr& str, int offset, int pSize);
+		void fmtFuncS(bstr& str, int iFunc);
+		int fmtFuncs(bstr& str, int offset, FmtConf& fc);
 
 
 

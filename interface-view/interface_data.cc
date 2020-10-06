@@ -98,13 +98,19 @@ void InterfaceData::Interface::fmtFunc(bstr& str, int iFunc)
 	str.fmtcat(");");
 }
 
-int InterfaceData::Interface::fmtFuncs(bstr& str, int offset, int pSize)
+void InterfaceData::Interface::fmtFuncS(bstr& str, int iFunc)
 {
-	if(pBase) offset = pBase->fmtFuncs(str, offset, pSize);
+	auto args = getArgs(iFunc);
+	str.fmtcat("%s@%d", funcs[iFunc], args.len-1);
+}
+
+int InterfaceData::Interface::fmtFuncs(bstr& str, int offset, FmtConf& fc)
+{
+	if(pBase) offset = pBase->fmtFuncs(str, offset, fc);
 	str.fmtcat("  // %s methods", type);
 	for(int i = 0; i < funcs.len; i++) {
-		str.fmtcat("\r\n  /* %02X */  ", offset); offset += pSize;
-		fmtFunc(str, i); }
+		str.fmtcat("\r\n  /* %02X */  ", offset); offset += fc.pSize;
+		if(fc.simple) fmtFuncS(str, i); else fmtFunc(str, i); }
 	str.fmtcat("\r\n\r\n");
 	return offset;
 }
