@@ -79,6 +79,10 @@ void parse_define(cParse::Parse_t pos)
 	// update item
 	x->toks = pos;
 	x->nArgs = name.type-1;
+
+	// remove space flags
+	for(auto& x : pos) x.vl &= ~0x200;
+
 	//printf("%d, %.*s\n", name.type-1, name.name.prn());
 }
 
@@ -131,6 +135,12 @@ bool parse_methods(bool idlMode, cParse::Parse_t pos)
 
 	while(pos.chk())
 	{
+		// parse any macros
+		if(pos.cppType() == CPP_DEFINE) {
+			parse_define(pos.cppBlock());;
+			continue;
+		}
+
 		// skip operators
 		if(pos->value() != CTOK_NAME) {
 
