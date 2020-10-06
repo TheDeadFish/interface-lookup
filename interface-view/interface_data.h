@@ -43,4 +43,7 @@ struct InterfaceData
 	#define INTERFACEDATA_INTERFACE_ITER(x, ...) { \
 		InterfaceData::Interface* pos = x; \
 		for(;pos;pos=pos->pBase) {__VA_ARGS__; } }
+
+	static
+	void fmtArg(bstr& str, cch* arg);
 };

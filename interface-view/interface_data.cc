@@ -89,11 +89,31 @@ xarray<char*> InterfaceData::Interface::getArgs(int iFunc)
 	return ret;
 }
 
+void InterfaceData::fmtArg(bstr& str, cch* curPos)
+{
+	while(*curPos) {
+
+		// locate pointer
+		cch* basePos = curPos;
+		while(*curPos) { curPos++;
+			if((curPos[-1] == '*')
+			&&(curPos[0] != '*'))
+				break;
+		}
+
+
+		str.fmtcat("%v ", cstr(basePos, curPos));
+	}
+
+	if(str.slen) { str.slen--;
+		str.fmtcat(", "); }
+}
+
 void InterfaceData::Interface::fmtFunc(bstr& str, int iFunc)
 {
 	auto args = getArgs(iFunc);
 	str.fmtcat("%s %s(", args[0], funcs[iFunc]);
-	for(char* arg : args.right(1)) str.fmtcat("%s, ", arg);
+	for(char* arg : args.right(1)) fmtArg(str, arg);
 	if(args.len > 1) str.slen -= 2;
 	str.fmtcat(");");
 }
