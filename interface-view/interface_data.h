@@ -2,7 +2,7 @@
 
 struct InterfaceData
 {
-	struct FmtConf { int pSize; bool simple; };
+	struct FmtConf { int pSize; int simple; };
 
 	struct Interface
 	{

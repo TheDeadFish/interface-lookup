@@ -107,18 +107,30 @@ void item_select(HWND hwnd)
 	int nSel = listView_getCurSel(s_hList);
 	InterfaceData::Interface* type = Void(lstView_getData(s_hList, nSel));
 	if(!type || (s_curType != type)) { s_curType = type; init_base(hwnd); }
-	if(type == NULL) return;
 
-	if(nTabPage == 1) {
-
-		// formatting config
-		InterfaceData::FmtConf fc;
-		fc.pSize = IsDlgButtonChecked(hwnd, IDC_X64) ? 8 : 4;
-		fc.simple = IsDlgButtonChecked(hwnd, IDC_SIMPLE);
+	if(nTabPage) {
 
 		Bstr str;
-		type->fmtFuncs(str, 0, fc);
-		setDlgItemText(hwnd, IDC_EDIT, str.data);
+
+		if(type)
+		{
+			// formatting config
+			InterfaceData::FmtConf fc;
+			fc.pSize = IsDlgButtonChecked(hwnd, IDC_X64) ? 8 : 4;
+			fc.simple = IsDlgButtonChecked(hwnd, IDC_SIMPLE);
+
+			// vtable mode
+			if(nTabPage == 2) {
+				str.fmtcat("struct %s\n{\r\n  %s_vtab* vtab;\n};\n\n"
+					"struct %s_vtab\n{\n", type->type, type->type, type->type);
+				fc.simple = 2;
+			}
+
+			type->fmtFuncs(str, 0, fc);
+			if(nTabPage == 2) {	str.fmtcat("};"); }
+		}
+
+		SetDlgItemTextW(hwnd, IDC_EDIT, crlf_widen(str.data));
 	}
 }
 

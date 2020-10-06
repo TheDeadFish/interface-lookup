@@ -129,8 +129,13 @@ int InterfaceData::Interface::fmtFuncs(bstr& str, int offset, FmtConf& fc)
 	if(pBase) offset = pBase->fmtFuncs(str, offset, fc);
 	str.fmtcat("  // %s methods", type);
 	for(int i = 0; i < funcs.len; i++) {
-		str.fmtcat("\r\n  /* %02X */  ", offset); offset += fc.pSize;
-		if(fc.simple) fmtFuncS(str, i); else fmtFunc(str, i); }
-	str.fmtcat("\r\n\r\n");
+		if(fc.simple == 2) {
+			str.fmtcat("\n  void* %s;", funcs[i]);
+		} else {
+			str.fmtcat("\n  /* %02X */  ", offset); offset += fc.pSize;
+			if(fc.simple) fmtFuncS(str, i); else fmtFunc(str, i);
+		}
+	}
+	str.fmtcat("\n\n");
 	return offset;
 }
