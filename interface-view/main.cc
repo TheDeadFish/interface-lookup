@@ -3,6 +3,7 @@
 #include "resource.h"
 #include "resize.h"
 #include "interface_data.h"
+#include "selfont.h"
 
 const char progName[] = "interface-view";
 
@@ -37,11 +38,15 @@ void selectTab(HWND hwnd)
 void nameEdtChange(HWND hwnd);
 void mainDlgInit(HWND hwnd, cch* file)
 {
+	init_font();
+	sendDlgMsg(hwnd, IDC_EDIT, WM_SETFONT, (WPARAM)g_hfont);
+
 	s_resize.init(hwnd);
 	s_resize.add(hwnd, IDC_NAME, HOR_BOTH);
 	s_resize.add(hwnd, IDC_VERSION, HOR_BOTH);
 	s_resize.add(hwnd, IDC_LIST1, HVR_BOTH);
 	s_resize.add(hwnd, IDC_EDIT, HVR_BOTH);
+	s_resize.add(hwnd, IDC_FONT, HOR_RIGH);
 
 	addDlgTabPage(hwnd, IDC_TAB, 0, "List");
 	addDlgTabPage(hwnd, IDC_TAB, 1, "Class");
@@ -133,6 +138,12 @@ void nameEdtChange(HWND hwnd)
 	item_select(hwnd);
 }
 
+void select_font_(HWND hwnd)
+{
+	select_font(hwnd);
+	sendDlgMsg(hwnd, IDC_EDIT, WM_SETFONT, (WPARAM)g_hfont, TRUE);
+}
+
 BOOL CALLBACK mainDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	DLGMSG_SWITCH(
@@ -141,6 +152,7 @@ BOOL CALLBACK mainDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 		CASE_COMMAND(
 			ON_COMMAND(IDCANCEL, EndDialog(hwnd, 0))
+			ON_COMMAND(IDC_FONT, select_font_(hwnd))
 			ON_CONTROL(CBN_SELCHANGE, IDC_BASE, select_base(hwnd))
 			ON_CONTROL(CBN_SELCHANGE, IDC_VERSION, select_version(hwnd))
 			ON_CONTROL(EN_CHANGE, IDC_NAME, nameEdtChange(hwnd))

@@ -9,3 +9,4 @@
 #define IDC_TAB                                 40003
 #define IDC_EDIT                                40004
 #define IDC_LIST1                               40005
+#define IDC_FONT                                40006

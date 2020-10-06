@@ -6,6 +6,7 @@ add_executable(interface-view
 	resource.rc
 	main.cc
 	interface_data.cc
+	selfont.cc
 )
 
 
