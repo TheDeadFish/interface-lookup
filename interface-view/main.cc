@@ -4,6 +4,7 @@
 #include "resize.h"
 #include "interface_data.h"
 #include "selfont.h"
+#include "util.h"
 
 const char progName[] = "interface-view";
 
@@ -12,12 +13,6 @@ static HWND s_hList;
 static WndResize s_resize;
 static int nTabPage;
 static InterfaceData::Interface* s_curType;
-
-void ShowDlgItem(HWND hwnd, int id, BOOL show)
-{
-	hwnd = GetDlgItem(hwnd, id);
-	ShowWindow(hwnd, show ? SW_SHOW : SW_HIDE);
-}
 
 void loadFile(HWND hwnd, cch* file)
 {
@@ -148,8 +143,12 @@ void nameEdtChange(HWND hwnd)
 	for(auto* x : lst) {
 		int i = lstView_iosText(s_hList, -1, x->type, (LPARAM)x);
 		lstView_iosText(s_hList, i, 1, x->base);
-		//lstView_iosText(s_hList, i, 2, x->value);
+		lstView_iosText(s_hList, i, 2, xstr(x->getFiles()));
 	}
+
+	// resize the listview
+	if(strlen(buff) >= 2)
+		lstView_autoSize(s_hList);
 
 	ListView_SetItemState(s_hList, 0,
 		LVIS_FOCUSED | LVIS_SELECTED, 0xF);

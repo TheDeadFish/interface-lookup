@@ -20,6 +20,7 @@ struct InterfaceData
 
 		// data access
 		xarray<char*> getArgs(int iFunc);
+		char* getFiles();
 
 		// text formatting
 		void fmtFunc(bstr& str, int iFunc);

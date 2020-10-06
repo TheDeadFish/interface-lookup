@@ -139,3 +139,12 @@ int InterfaceData::Interface::fmtFuncs(bstr& str, int offset, FmtConf& fc)
 	str.fmtcat("\n\n");
 	return offset;
 }
+
+char* InterfaceData::Interface::getFiles()
+{
+	bstr str = {};
+	for(auto& set: argSet) {
+		str.fmtcat("%s", set.files); }
+	//if(str.slen) str.slen -= 2;
+	return str.data;
+}

@@ -9,6 +9,7 @@ add_executable(interface-view
 	main.cc
 	interface_data.cc
 	selfont.cc
+	util.cc
 )
 
 
