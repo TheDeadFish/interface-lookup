@@ -46,6 +46,8 @@ void mainDlgInit(HWND hwnd, cch* file)
 	s_resize.add(hwnd, IDC_VERSION, HOR_BOTH);
 	s_resize.add(hwnd, IDC_LIST1, HVR_BOTH);
 	s_resize.add(hwnd, IDC_EDIT, HVR_BOTH);
+	s_resize.add(hwnd, IDC_SIMPLE, HOR_RIGH);
+	s_resize.add(hwnd, IDC_X64, HOR_RIGH);
 	s_resize.add(hwnd, IDC_FONT, HOR_RIGH);
 
 	addDlgTabPage(hwnd, IDC_TAB, 0, "List");
