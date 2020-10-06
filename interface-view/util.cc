@@ -23,3 +23,10 @@ void ShowDlgItem(HWND hwnd, int id, BOOL show)
 	hwnd = GetDlgItem(hwnd, id);
 	ShowWindow(hwnd, show ? SW_SHOW : SW_HIDE);
 }
+
+void* dlgCombo_getCurData(HWND hwnd, int id)
+{
+	int iSel = dlgCombo_getSel(hwnd, id);
+	if(iSel < 0) return NULL;
+	return (void*)dlgCombo_getData(hwnd, id, iSel);
+}

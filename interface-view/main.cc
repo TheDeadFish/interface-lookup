@@ -66,19 +66,17 @@ void mainDlgInit(HWND hwnd, cch* file)
 
 void select_version(HWND hwnd)
 {
-	int iBase = dlgCombo_getSel(hwnd, IDC_BASE);
 	int iVer = dlgCombo_getSel(hwnd, IDC_VERSION);
-	InterfaceData::Interface* type = Void(dlgCombo_getData(hwnd, IDC_BASE, iBase));
+	InterfaceData::Interface* type = Void(dlgCombo_getCurData(hwnd, IDC_BASE));
 	if(type && (iVer >= 0)) type->setSel = iVer;
 	item_select(hwnd);
 }
 
 void select_base(HWND hwnd)
 {
-	int iSel = dlgCombo_getSel(hwnd, IDC_BASE);
-	InterfaceData::Interface* type = Void(dlgCombo_getData(hwnd, IDC_BASE, iSel));
+	InterfaceData::Interface* type = Void(dlgCombo_getCurData(hwnd, IDC_BASE));
 	dlgCombo_reset(hwnd, IDC_VERSION);
-	if(iSel >= 0) { for(auto& arg : type->argSet) {
+	if(type) { for(auto& arg : type->argSet) {
 		dlgCombo_addStr(hwnd, IDC_VERSION, arg.files); }
 		dlgCombo_setSel(hwnd, IDC_VERSION, type->setSel); }
 	EnableDlgItem(hwnd, IDC_VERSION,
@@ -107,6 +105,7 @@ void item_select(HWND hwnd)
 
 		Bstr str;
 
+		type = Void(dlgCombo_getCurData(hwnd, IDC_BASE));
 		if(type)
 		{
 			// formatting config
@@ -174,7 +173,7 @@ BOOL CALLBACK mainDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			ON_COMMAND(IDC_SIMPLE, item_select(hwnd))
 			ON_COMMAND(IDCANCEL, EndDialog(hwnd, 0))
 			ON_COMMAND(IDC_FONT, select_font_(hwnd))
-			ON_CONTROL(CBN_SELCHANGE, IDC_BASE, select_base(hwnd))
+			ON_CONTROL(CBN_SELCHANGE, IDC_BASE, select_base(hwnd); item_select(hwnd))
 			ON_CONTROL(CBN_SELCHANGE, IDC_VERSION, select_version(hwnd))
 			ON_CONTROL(EN_CHANGE, IDC_NAME, nameEdtChange(hwnd))
 
